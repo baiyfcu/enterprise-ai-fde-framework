@@ -28,15 +28,17 @@ class FDEWorkflow:
         evaluation = self.evaluator_agent.run(requirement, discovery, architecture, builder)
         delivery = self.delivery_agent.run(requirement, evaluation)
 
-        tools = get_tool_catalog()
+        tools = {tool.name: tool for tool in get_tool_catalog()}
+        query_tool = tools["mock_crm_query"]
+        create_tool = tools["mock_ticket_create"]
         tool_outputs = []
 
         if "tool:query" in role_binding.permissions:
-            tool_outputs.append(tools[0].execute({"account": requirement.industry}))
+            tool_outputs.append(query_tool.execute({"account": requirement.industry}))
         else:
             tool_outputs.append(
                 ToolExecutionResult(
-                    tool_name=tools[0].name,
+                    tool_name=query_tool.name,
                     success=False,
                     message="当前角色没有查询企业工具的权限",
                 )
@@ -44,12 +46,12 @@ class FDEWorkflow:
 
         if "tool:create" in role_binding.permissions:
             tool_outputs.append(
-                tools[1].execute({"title": f"{requirement.problem} - PoC 跟进", "owner": role_binding.role})
+                create_tool.execute({"title": f"{requirement.problem} - PoC 跟进", "owner": role_binding.role})
             )
         else:
             tool_outputs.append(
                 ToolExecutionResult(
-                    tool_name=tools[1].name,
+                    tool_name=create_tool.name,
                     success=False,
                     message="当前角色没有创建企业工单的权限",
                 )

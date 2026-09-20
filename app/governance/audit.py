@@ -1,9 +1,17 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from app.models import AuditEvent
 
 
-def build_audit_event(actor: str, action: str, resource: str, outcome: str, **details: object) -> AuditEvent:
+def build_audit_event(
+    actor: str,
+    action: str,
+    resource: str,
+    outcome: Literal["success", "failure"],
+    **details: object,
+) -> AuditEvent:
     return AuditEvent(
         actor=actor,
         action=action,

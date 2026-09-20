@@ -1,5 +1,7 @@
 from app.governance.masking import mask_sensitive_data
+from app.integrations.tools import MockCRMQueryTool, MockTicketCreateTool
 from app.models import EnterpriseRequirement
+from app.orchestration import workflow as workflow_module
 from app.orchestration.workflow import FDEWorkflow
 
 
@@ -32,3 +34,16 @@ def test_mask_sensitive_data_redacts_nested_values():
     assert masked["email"] == "***REDACTED***"
     assert masked["nested"]["token"] == "***REDACTED***"
     assert masked["nested"]["ok"] == "value"
+
+
+def test_workflow_resolves_tools_by_name(monkeypatch):
+    monkeypatch.setattr(
+        workflow_module,
+        "get_tool_catalog",
+        lambda: [MockTicketCreateTool(), MockCRMQueryTool()],
+    )
+
+    result = FDEWorkflow().run(sample_requirement())
+
+    assert result.tool_outputs[0].tool_name == "mock_crm_query"
+    assert result.tool_outputs[1].tool_name == "mock_ticket_create"

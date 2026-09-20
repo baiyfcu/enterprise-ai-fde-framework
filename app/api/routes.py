@@ -41,4 +41,5 @@ def list_tools() -> list[dict[str, str]]:
 
 @router.post("/workflow/run")
 def run_workflow(requirement: EnterpriseRequirement):
+    """运行一次 FDE workflow，角色上下文由服务端配置或未来的认证体系决定。"""
     return workflow.run(requirement=requirement, role=get_default_role())
