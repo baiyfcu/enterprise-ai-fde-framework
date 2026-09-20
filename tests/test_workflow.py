@@ -47,3 +47,17 @@ def test_workflow_resolves_tools_by_name(monkeypatch):
 
     assert result.tool_outputs[0].tool_name == "mock_crm_query"
     assert result.tool_outputs[1].tool_name == "mock_ticket_create"
+
+
+def test_workflow_handles_missing_required_tool(monkeypatch):
+    monkeypatch.setattr(
+        workflow_module,
+        "get_tool_catalog",
+        lambda: [MockCRMQueryTool()],
+    )
+
+    result = FDEWorkflow().run(sample_requirement())
+
+    assert result.tool_outputs[0].success is True
+    assert result.tool_outputs[1].success is False
+    assert result.tool_outputs[1].message == "必需工具缺失：mock_ticket_create"

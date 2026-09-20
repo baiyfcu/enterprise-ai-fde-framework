@@ -29,29 +29,45 @@ class FDEWorkflow:
         delivery = self.delivery_agent.run(requirement, evaluation)
 
         tools = {tool.name: tool for tool in get_tool_catalog()}
-        query_tool = tools["mock_crm_query"]
-        create_tool = tools["mock_ticket_create"]
+        query_tool = tools.get("mock_crm_query")
+        create_tool = tools.get("mock_ticket_create")
         tool_outputs = []
 
-        if "tool:query" in role_binding.permissions:
+        if query_tool is None:
+            tool_outputs.append(
+                ToolExecutionResult(
+                    tool_name="mock_crm_query",
+                    success=False,
+                    message="必需工具缺失：mock_crm_query",
+                )
+            )
+        elif "tool:query" in role_binding.permissions:
             tool_outputs.append(query_tool.execute({"account": requirement.industry}))
         else:
             tool_outputs.append(
                 ToolExecutionResult(
-                    tool_name=query_tool.name,
+                    tool_name="mock_crm_query",
                     success=False,
                     message="当前角色没有查询企业工具的权限",
                 )
             )
 
-        if "tool:create" in role_binding.permissions:
+        if create_tool is None:
+            tool_outputs.append(
+                ToolExecutionResult(
+                    tool_name="mock_ticket_create",
+                    success=False,
+                    message="必需工具缺失：mock_ticket_create",
+                )
+            )
+        elif "tool:create" in role_binding.permissions:
             tool_outputs.append(
                 create_tool.execute({"title": f"{requirement.problem} - PoC 跟进", "owner": role_binding.role})
             )
         else:
             tool_outputs.append(
                 ToolExecutionResult(
-                    tool_name=create_tool.name,
+                    tool_name="mock_ticket_create",
                     success=False,
                     message="当前角色没有创建企业工单的权限",
                 )
