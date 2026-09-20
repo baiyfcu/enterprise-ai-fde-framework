@@ -62,7 +62,9 @@ class FDEWorkflow:
             )
         elif "tool:create" in role_binding.permissions:
             tool_outputs.append(
-                create_tool.execute({"title": f"{requirement.problem} - PoC 跟进", "owner": role_binding.role})
+                create_tool.execute(
+                    {"title": f"{requirement.industry} AI MVP PoC 跟进", "owner": role_binding.role}
+                )
             )
         else:
             tool_outputs.append(

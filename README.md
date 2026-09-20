@@ -51,6 +51,11 @@ uvicorn app.main:app --reload
 docker compose up --build
 ```
 
+说明：
+
+- 仓库已自带 `.env.example`，当前 `docker-compose.yml` 会直接读取它。
+- 如果你希望使用独立运行时配置，可复制为 `.env` 或其他文件，并同步调整 `docker-compose.yml` 中的 `env_file`。
+
 ## 4. 架构说明
 
 ### 4.1 工作流
