@@ -1,6 +1,6 @@
 from app.governance.masking import mask_sensitive_data
 from app.integrations.tools import MockCRMQueryTool, MockTicketCreateTool
-from app.models import EnterpriseRequirement
+from app.models import EnterpriseRequirement, RoleBinding
 from app.orchestration import workflow as workflow_module
 from app.orchestration.workflow import FDEWorkflow
 
@@ -61,3 +61,17 @@ def test_workflow_handles_missing_required_tool(monkeypatch):
     assert result.tool_outputs[0].success is True
     assert result.tool_outputs[1].success is False
     assert result.tool_outputs[1].message == "必需工具缺失：mock_ticket_create"
+
+
+def test_workflow_denies_role_without_run_permission(monkeypatch):
+    monkeypatch.setattr(
+        workflow_module,
+        "resolve_role_binding",
+        lambda role: RoleBinding(role="guest", permissions=[]),
+    )
+
+    result = FDEWorkflow().run(sample_requirement(), role="guest")
+
+    assert result.evaluation.acceptance.passed is False
+    assert result.evaluation.acceptance.blockers == ["当前角色缺少 workflow:run 权限"]
+    assert result.audit_events[0].outcome == "failure"

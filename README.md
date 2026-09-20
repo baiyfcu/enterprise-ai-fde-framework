@@ -55,6 +55,7 @@ docker compose up --build
 说明：
 
 - `.env.example` 是模板文件；`docker-compose.yml` 默认读取实际运行时配置 `.env`。
+- **`.env` 是必需的**；如果未先执行 `cp .env.example .env`，`docker compose up --build` 会因为找不到 `env_file` 而失败。
 - 如果你希望使用其他文件名，可复制出一份并同步调整 `docker-compose.yml` 中的 `env_file`。
 
 ## 4. 架构说明

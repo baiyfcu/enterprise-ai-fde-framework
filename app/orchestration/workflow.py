@@ -9,7 +9,20 @@ from app.governance.audit import build_audit_event
 from app.governance.masking import mask_sensitive_data
 from app.governance.rbac import resolve_role_binding
 from app.integrations.tools import get_tool_catalog
-from app.models import EnterpriseRequirement, FDEWorkflowResult, ToolExecutionResult
+from app.models import (
+    AcceptanceDecision,
+    BuilderPlan,
+    DeliverySummary,
+    DiscoveryReport,
+    EnterpriseRequirement,
+    EvaluationPlan,
+    EvaluationScorecard,
+    FDEWorkflowResult,
+    ROIHypothesis,
+    RoleBinding,
+    SolutionArchitecture,
+    ToolExecutionResult,
+)
 
 
 class FDEWorkflow:
@@ -22,6 +35,8 @@ class FDEWorkflow:
 
     def run(self, requirement: EnterpriseRequirement, role: str = "fde_admin") -> FDEWorkflowResult:
         role_binding = resolve_role_binding(role)
+        if "workflow:run" not in role_binding.permissions:
+            return self._build_workflow_denied_result(requirement, role_binding)
         discovery = self.discovery_agent.run(requirement)
         architecture = self.architect_agent.run(requirement)
         builder = self.builder_agent.run(requirement)
@@ -76,19 +91,20 @@ class FDEWorkflow:
             )
 
         sanitized_requirement = mask_sensitive_data(requirement.model_dump())
+        tool_outcome = "success" if all(tool.success for tool in tool_outputs) else "failure"
         audit_events = [
             build_audit_event(
                 actor=role_binding.role,
                 action="workflow.run",
                 resource="fde_workflow",
-                outcome="success",
+                outcome=tool_outcome,
                 requirement=sanitized_requirement,
             ),
             build_audit_event(
                 actor=role_binding.role,
                 action="tool.batch_execute",
                 resource="tool_batch",
-                outcome="success",
+                outcome=tool_outcome,
                 tool_count=len(tool_outputs),
                 executed_tools=[
                     {"tool_name": tool.tool_name, "success": tool.success, "message": tool.message}
@@ -106,5 +122,66 @@ class FDEWorkflow:
             delivery=delivery,
             tool_outputs=tool_outputs,
             audit_events=audit_events,
+            role_binding=role_binding,
+        )
+
+    def _build_workflow_denied_result(
+        self,
+        requirement: EnterpriseRequirement,
+        role_binding: RoleBinding,
+    ) -> FDEWorkflowResult:
+        return FDEWorkflowResult(
+            requirement=requirement,
+            discovery=DiscoveryReport(
+                current_state="当前角色未被授权执行 FDE workflow。",
+                target_outcome="申请具备 workflow:run 权限的角色后重试。",
+                risks=["未授权执行，未生成业务分析结果。"],
+                prioritized_use_cases=[],
+                roi_hypothesis=ROIHypothesis(
+                    baseline_cost_per_month=0,
+                    estimated_savings_per_month=0,
+                    payback_months=0,
+                    assumptions=[],
+                ),
+            ),
+            solution_architecture=SolutionArchitecture(
+                pattern="未执行",
+                components=[],
+                integrations=[],
+                governance_controls=[],
+                decisions=[],
+            ),
+            builder=BuilderPlan(
+                implementation_phases=[],
+                tool_blueprints=[],
+                mock_rag_blueprint=[],
+                delivery_artifacts=[],
+            ),
+            evaluation=EvaluationPlan(
+                metrics=["quality", "safety", "cost", "latency"],
+                test_scenarios=[],
+                scorecard=EvaluationScorecard(quality=0, safety=0, cost=0, latency=0),
+                acceptance=AcceptanceDecision(
+                    passed=False,
+                    threshold=70,
+                    blockers=["当前角色缺少 workflow:run 权限"],
+                ),
+            ),
+            delivery=DeliverySummary(
+                executive_summary="未授权执行 workflow，因此未生成交付方案。",
+                next_steps=["切换到具备 workflow:run 权限的角色。"],
+                operating_model=[],
+                audit_notes=["本次请求被 RBAC 拒绝。"],
+            ),
+            tool_outputs=[],
+            audit_events=[
+                build_audit_event(
+                    actor=role_binding.role,
+                    action="workflow.run",
+                    resource="fde_workflow",
+                    outcome="failure",
+                    reason="missing workflow:run permission",
+                )
+            ],
             role_binding=role_binding,
         )
