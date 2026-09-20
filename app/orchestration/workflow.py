@@ -9,7 +9,7 @@ from app.governance.audit import build_audit_event
 from app.governance.masking import mask_sensitive_data
 from app.governance.rbac import resolve_role_binding
 from app.integrations.tools import get_tool_catalog
-from app.models import EnterpriseRequirement, FDEWorkflowResult
+from app.models import EnterpriseRequirement, FDEWorkflowResult, ToolExecutionResult
 
 
 class FDEWorkflow:
@@ -29,10 +29,31 @@ class FDEWorkflow:
         delivery = self.delivery_agent.run(requirement, evaluation)
 
         tools = get_tool_catalog()
-        tool_outputs = [
-            tools[0].execute({"account": requirement.industry}),
-            tools[1].execute({"title": f"{requirement.problem} - PoC 跟进", "owner": role_binding.role}),
-        ]
+        tool_outputs = []
+
+        if "tool:query" in role_binding.permissions:
+            tool_outputs.append(tools[0].execute({"account": requirement.industry}))
+        else:
+            tool_outputs.append(
+                ToolExecutionResult(
+                    tool_name=tools[0].name,
+                    success=False,
+                    message="当前角色没有查询企业工具的权限",
+                )
+            )
+
+        if "tool:create" in role_binding.permissions:
+            tool_outputs.append(
+                tools[1].execute({"title": f"{requirement.problem} - PoC 跟进", "owner": role_binding.role})
+            )
+        else:
+            tool_outputs.append(
+                ToolExecutionResult(
+                    tool_name=tools[1].name,
+                    success=False,
+                    message="当前角色没有创建企业工单的权限",
+                )
+            )
 
         sanitized_requirement = mask_sensitive_data(requirement.model_dump())
         audit_events = [
@@ -46,9 +67,13 @@ class FDEWorkflow:
             build_audit_event(
                 actor=role_binding.role,
                 action="tool.batch_execute",
-                resource=",".join(tool.tool_name for tool in tool_outputs),
+                resource="tool_batch",
                 outcome="success",
                 tool_count=len(tool_outputs),
+                executed_tools=[
+                    {"tool_name": tool.tool_name, "success": tool.success, "message": tool.message}
+                    for tool in tool_outputs
+                ],
             ),
         ]
 

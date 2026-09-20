@@ -91,7 +91,7 @@ curl http://127.0.0.1:8000/api/tools
 ### 5.3 运行一次 FDE workflow
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/workflow/run?role=fde_admin" \
+curl -X POST "http://127.0.0.1:8000/api/workflow/run" \
   -H "Content-Type: application/json" \
   -d '{
     "industry": "制造业",
@@ -120,7 +120,7 @@ python -m app.cli
 
 ## 7. 示例输入与输出
 
-- 示例输入：`/home/runner/work/enterprise-ai-fde-framework/enterprise-ai-fde-framework/examples/knowledge_base_demo.json`
+- 示例输入：`examples/knowledge_base_demo.json`
 - 输出：CLI 或 `/api/workflow/run` 返回的 JSON
 
 ## 8. 生产化接入建议

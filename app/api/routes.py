@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+from app.config import get_default_role
 from app.integrations.tools import get_tool_catalog
 from app.models import EnterpriseRequirement
 from app.orchestration.workflow import FDEWorkflow
@@ -39,5 +40,5 @@ def list_tools() -> list[dict[str, str]]:
 
 
 @router.post("/workflow/run")
-def run_workflow(requirement: EnterpriseRequirement, role: str = "fde_admin"):
-    return workflow.run(requirement=requirement, role=role)
+def run_workflow(requirement: EnterpriseRequirement):
+    return workflow.run(requirement=requirement, role=get_default_role())
