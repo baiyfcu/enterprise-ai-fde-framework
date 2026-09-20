@@ -26,6 +26,7 @@ def test_run_workflow_endpoint():
     body = response.json()
     assert body["role_binding"]["role"] == "fde_admin"
     assert body["tool_outputs"][1]["data"]["status"] == "created"
+    assert len(body["audit_events"]) == 2
 
 
 def test_run_workflow_endpoint_blocks_create_for_query_only_role(monkeypatch):
@@ -47,6 +48,7 @@ def test_run_workflow_endpoint_blocks_create_for_query_only_role(monkeypatch):
     assert body["tool_outputs"][0]["success"] is True
     assert body["tool_outputs"][1]["success"] is False
     assert "没有创建企业工单的权限" in body["tool_outputs"][1]["message"]
+    assert body["audit_events"] == []
 
 
 def test_run_workflow_endpoint_falls_back_for_invalid_role(monkeypatch):
@@ -66,3 +68,4 @@ def test_run_workflow_endpoint_falls_back_for_invalid_role(monkeypatch):
     body = response.json()
     assert body["role_binding"]["role"] == "analyst"
     assert body["tool_outputs"][1]["success"] is False
+    assert body["audit_events"] == []

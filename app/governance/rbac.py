@@ -5,7 +5,7 @@ from app.models import RoleBinding
 
 ROLE_PERMISSIONS: dict[str, list[str]] = {
     "fde_admin": ["workflow:run", "tool:query", "tool:create", "audit:read"],
-    "solution_architect": ["workflow:run", "tool:query", "audit:read"],
+    "solution_architect": ["workflow:run", "tool:query"],
     "analyst": ["workflow:run", "tool:query"],
 }
 

@@ -3,8 +3,9 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.config import get_default_role
+from app.governance.rbac import resolve_role_binding
 from app.integrations.tools import get_tool_catalog
-from app.models import EnterpriseRequirement
+from app.models import EnterpriseRequirement, FDEWorkflowResult
 from app.orchestration.workflow import FDEWorkflow
 
 router = APIRouter()
@@ -40,6 +41,10 @@ def list_tools() -> list[dict[str, str]]:
 
 
 @router.post("/workflow/run")
-def run_workflow(requirement: EnterpriseRequirement):
+def run_workflow(requirement: EnterpriseRequirement) -> FDEWorkflowResult:
     """运行一次 FDE workflow，角色上下文由服务端配置或未来的认证体系决定。"""
-    return workflow.run(requirement=requirement, role=get_default_role())
+    role = resolve_role_binding(get_default_role()).role
+    result = workflow.run(requirement=requirement, role=role)
+    if "audit:read" not in result.role_binding.permissions:
+        return result.model_copy(update={"audit_events": []})
+    return result
