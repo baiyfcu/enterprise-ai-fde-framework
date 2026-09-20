@@ -48,15 +48,14 @@ uvicorn app.main:app --reload
 ### 3.2 Docker 方式
 
 ```bash
-cp .env.example .env
 docker compose up --build
 ```
 
 说明：
 
-- `.env.example` 是模板文件；`docker-compose.yml` 默认读取实际运行时配置 `.env`。
-- **`.env` 是必需的**；如果未先执行 `cp .env.example .env`，`docker compose up --build` 会因为找不到 `env_file` 而失败。
-- 如果你希望使用其他文件名，可复制出一份并同步调整 `docker-compose.yml` 中的 `env_file`。
+- 当前 `docker-compose.yml` 自带默认值，**不复制 `.env` 也能直接启动**。
+- `.env.example` 是可选模板；如果你想覆盖 `DEFAULT_ROLE` 等变量，可先执行 `cp .env.example .env`，再按需修改。
+- 也可以直接通过 shell 环境变量覆盖，例如：`DEFAULT_ROLE=solution_architect docker compose up --build`。
 
 ## 4. 架构说明
 
